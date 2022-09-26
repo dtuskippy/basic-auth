@@ -7,25 +7,36 @@ const base64 = require('base-64');
 const { Sequelize, DataTypes } = require('sequelize');
 
 // NOTE: connected to sqlite::memory out of box for proof of life
-// TODO: 
+// TODO:
 // connect postgres for local dev environment and prod
 // handle SSL requirements
 // connect with sqlite::memory for testing
-const DATABASE_URL = 'sqlite::memory'
+// const DATABASE_URL = 'sqlite::memory'
+const DATABASE_URL = process.env.NODE_ENV === 'test'
+  ? 'sqlite::memory' // two colons allows for NO persistance
+  : 'sqlite:memory'; // one colon allows us to persist - useful today
 
 // Prepare the express app
 const app = express();
+const PORT = process.env.PORT || 3002;
 
 // Process JSON input and put the data on req.body
 app.use(express.json());
 
-const sequelize = new Sequelize(DATABASE_URL);
+let options = process.env.NODE_ENV === 'production' ? {
+  dialectOptions: {
+    ssl: true,
+    rejectUnauthorized: false,
+  },
+} : {};
+
+const sequelizeDatabase = new Sequelize(DATABASE_URL, options);
 
 // Process FORM intput and put the data on req.body
 app.use(express.urlencoded({ extended: true }));
 
 // Create a Sequelize model
-const Users = sequelize.define('User', {
+const Users = sequelizeDatabase.define('User', {
   username: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -33,7 +44,7 @@ const Users = sequelize.define('User', {
   password: {
     type: DataTypes.STRING,
     allowNull: false,
-  }
+  },
 });
 
 // Signup Route -- create a new user
@@ -43,9 +54,9 @@ const Users = sequelize.define('User', {
 app.post('/signup', async (req, res) => {
 
   try {
-    req.body.password = await bcrypt.hash(req.body.password, 10);
+    req.body.password = await bcrypt.hash(req.body.password, 5);
     const record = await Users.create(req.body);
-    res.status(200).json(record);
+    res.status(201).json(record);
   } catch (e) { res.status(403).send('Error Creating User'); }
 });
 
@@ -90,10 +101,20 @@ app.post('/signin', async (req, res) => {
 
 });
 
-// make sure our tables are created, start up the HTTP server.
-sequelize.sync()
-  .then(() => {
-    app.listen(3000, () => console.log('server up'));
-  }).catch(e => {
-    console.error('Could not start server', e.message);
-  });
+app.get('/hello', (req, res, next) => {
+  // let { name } = req.query;
+  res.status(200).send('Hello there!'); //not sure about req.username to left here
+});
+
+
+
+module.exports = {
+  server: app,
+  start: () => sequelizeDatabase.sync()
+    .then(() => {
+      app.listen(PORT, () => console.log(`Server up PORT: ${PORT}`));
+    }).catch(e => {
+      console.error('Could not start server', e.message);
+    }),
+  sequelizeDatabase,
+};
