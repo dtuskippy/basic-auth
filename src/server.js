@@ -2,19 +2,10 @@
 
 // 3rd Party Resources
 const express = require('express');
-const bcrypt = require('bcrypt');
-const base64 = require('base-64');
-const { Sequelize, DataTypes } = require('sequelize');
+// const bcrypt = require('bcrypt');
+// const base64 = require('base-64');
+const usersRouter = require('./auth/router');
 
-// NOTE: connected to sqlite::memory out of box for proof of life
-// TODO:
-// connect postgres for local dev environment and prod
-// handle SSL requirements
-// connect with sqlite::memory for testing
-// const DATABASE_URL = 'sqlite::memory'
-const DATABASE_URL = process.env.NODE_ENV === 'test'
-  ? 'sqlite::memory' // two colons allows for NO persistance
-  : 'sqlite:memory'; // one colon allows us to persist - useful today
 
 // Prepare the express app
 const app = express();
@@ -23,50 +14,29 @@ const PORT = process.env.PORT || 3002;
 // Process JSON input and put the data on req.body
 app.use(express.json());
 
-let options = process.env.NODE_ENV === 'production' ? {
-  dialectOptions: {
-    ssl: true,
-    rejectUnauthorized: false,
-  },
-} : {};
-
-const sequelizeDatabase = new Sequelize(DATABASE_URL, options);
-
 // Process FORM intput and put the data on req.body
 app.use(express.urlencoded({ extended: true }));
-
-// Create a Sequelize model
-const Users = sequelizeDatabase.define('User', {
-  username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-});
 
 // Signup Route -- create a new user
 // Two ways to test this route with httpie
 // echo '{"username":"john","password":"foo"}' | http post :3000/signup
 // http post :3000/signup username=john password=foo
-app.post('/signup', async (req, res) => {
+// app.post('/signup', async (req, res) => {
 
-  try {
-    req.body.password = await bcrypt.hash(req.body.password, 5);
-    const record = await Users.create(req.body);
-    res.status(201).json(record);
-  } catch (e) { res.status(403).send('Error Creating User'); }
-});
+//   try {
+//     req.body.password = await bcrypt.hash(req.body.password, 5);
+//     const record = await UsersModel.create(req.body);
+//     res.status(201).json(record);
+//   } catch (e) { res.status(403).send('Error Creating User'); }
+// });
 
 
 // Signin Route -- login with username and password
 // test with httpie
 // http post :3000/signin -a john:foo
-app.post('/signin', async (req, res) => {
+// app.post('/signin', async (req, res) => {
 
-  /*
+/*
     req.headers.authorization is : "Basic sdkjdsljd="
     To get username and password from this, take the following steps:
       - Turn that string into an array by splitting on ' '
@@ -76,29 +46,32 @@ app.post('/signin', async (req, res) => {
       - Pull username and password from that array
   */
 
-  let basicHeaderParts = req.headers.authorization.split(' ');  // ['Basic', 'sdkjdsljd=']
-  let encodedString = basicHeaderParts.pop();  // sdkjdsljd=
-  let decodedString = base64.decode(encodedString); // "username:password"
-  let [username, password] = decodedString.split(':'); // username, password
+//   let basicHeaderParts = req.headers.authorization.split(' ');  // ['Basic', 'sdkjdsljd=']
+//   let encodedString = basicHeaderParts.pop();  // sdkjdsljd=
+//   let decodedString = base64.decode(encodedString); // "username:password"
+//   let [username, password] = decodedString.split(':'); // username, password
 
-  /*
+/*
     Now that we finally have username and password, let's see if it's valid
     1. Find the user in the database by username
     2. Compare the plaintext password we now have against the encrypted password in the db
        - bcrypt does this by re-encrypting the plaintext password and comparing THAT
     3. Either we're valid or we throw an error
   */
-  try {
-    const user = await Users.findOne({ where: { username: username } });
-    const valid = await bcrypt.compare(password, user.password);
-    if (valid) {
-      res.status(200).json(user);
-    }
-    else {
-      throw new Error('Invalid User');
-    }
-  } catch (error) { res.status(403).send('Invalid Login'); }
+//   try {
+//     const user = await UsersModel.findOne({ where: { username: username } });
+//     const valid = await bcrypt.compare(password, user.password);
+//     if (valid) {
+//       res.status(200).json(user);
+//     }
+//     else {
+//       throw new Error('Invalid User');
+//     }
+//   } catch (error) { res.status(403).send('Invalid Login'); }
 
+// });
+app.get('/', (req, res, next) => {
+  res.status(200).send('Hello, welcome to the World of User Auth!');
 });
 
 app.get('/hello', (req, res, next) => {
@@ -106,15 +79,10 @@ app.get('/hello', (req, res, next) => {
   res.status(200).send('Hello there!'); //not sure about req.username to left here
 });
 
-
+app.use(usersRouter);
 
 module.exports = {
   server: app,
-  start: () => sequelizeDatabase.sync()
-    .then(() => {
-      app.listen(PORT, () => console.log(`Server up PORT: ${PORT}`));
-    }).catch(e => {
-      console.error('Could not start server', e.message);
-    }),
-  sequelizeDatabase,
+  start: () => app.listen(PORT, console.log('Server running on: ', PORT)),
 };
+
