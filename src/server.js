@@ -5,16 +5,10 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const base64 = require('base-64');
 const { Sequelize, DataTypes } = require('sequelize');
+//Temp proof of life
+const { UsersModel } = require('./auth/models');
 
-// NOTE: connected to sqlite::memory out of box for proof of life
-// TODO:
-// connect postgres for local dev environment and prod
-// handle SSL requirements
-// connect with sqlite::memory for testing
-// const DATABASE_URL = 'sqlite::memory'
-const DATABASE_URL = process.env.NODE_ENV === 'test'
-  ? 'sqlite::memory' // two colons allows for NO persistance
-  : 'sqlite:memory'; // one colon allows us to persist - useful today
+
 
 // Prepare the express app
 const app = express();
@@ -23,29 +17,34 @@ const PORT = process.env.PORT || 3002;
 // Process JSON input and put the data on req.body
 app.use(express.json());
 
-let options = process.env.NODE_ENV === 'production' ? {
-  dialectOptions: {
-    ssl: true,
-    rejectUnauthorized: false,
-  },
-} : {};
+// const DATABASE_URL = process.env.NODE_ENV === 'test'
+//   ? 'sqlite::memory' // two colons allows for NO persistance
+//   : 'sqlite:memory'; // one colon allows us to persist - useful today
 
-const sequelizeDatabase = new Sequelize(DATABASE_URL, options);
+
+// let options = process.env.NODE_ENV === 'production' ? {
+//   dialectOptions: {
+//     ssl: true,
+//     rejectUnauthorized: false,
+//   },
+// } : {};
+
+// const sequelizeDatabase = new Sequelize(DATABASE_URL, options);
 
 // Process FORM intput and put the data on req.body
 app.use(express.urlencoded({ extended: true }));
 
 // Create a Sequelize model
-const Users = sequelizeDatabase.define('User', {
-  username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-});
+// const Users = sequelizeDatabase.define('User', {
+//   username: {
+//     type: DataTypes.STRING,
+//     allowNull: false,
+//   },
+//   password: {
+//     type: DataTypes.STRING,
+//     allowNull: false,
+//   },
+// });
 
 // Signup Route -- create a new user
 // Two ways to test this route with httpie
@@ -55,7 +54,7 @@ app.post('/signup', async (req, res) => {
 
   try {
     req.body.password = await bcrypt.hash(req.body.password, 5);
-    const record = await Users.create(req.body);
+    const record = await UsersModel.create(req.body);
     res.status(201).json(record);
   } catch (e) { res.status(403).send('Error Creating User'); }
 });
@@ -89,7 +88,7 @@ app.post('/signin', async (req, res) => {
     3. Either we're valid or we throw an error
   */
   try {
-    const user = await Users.findOne({ where: { username: username } });
+    const user = await UsersModel.findOne({ where: { username: username } });
     const valid = await bcrypt.compare(password, user.password);
     if (valid) {
       res.status(200).json(user);
