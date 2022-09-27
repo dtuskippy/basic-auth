@@ -24,6 +24,7 @@ let options = process.env.NODE_ENV === 'production' ? {
   },
 } : {};
 
+
 const sequelizeDatabase = new Sequelize(DATABASE_URL, options);
 
 const UsersModel = usersSchema(sequelizeDatabase, DataTypes);
