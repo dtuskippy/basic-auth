@@ -48,22 +48,4 @@ async function basicAuth(req, res, next) {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 module.exports = basicAuth;

@@ -10,3 +10,10 @@ sequelizeDatabase.sync()
   })
   .catch((e) => console.error(e));
 
+
+
+
+
+
+
+
