@@ -3,6 +3,9 @@
 require('dotenv').config();
 const { Sequelize, DataTypes } = require('sequelize');
 const usersSchema = require('./users.schema');
+// const bcrypt = require('bcrypt');
+
+
 
 // NOTE: connected to sqlite::memory out of box for proof of life
 // TODO:
@@ -27,7 +30,16 @@ let options = process.env.NODE_ENV === 'production' ? {
 
 const sequelizeDatabase = new Sequelize(DATABASE_URL, options);
 
+
 const UsersModel = usersSchema(sequelizeDatabase, DataTypes);
+
+// UsersModel.beforeCreate((user) => {
+//   console.log('our user', user);
+// });
+// UsersModel.beforeCreate(async (User) => {
+//   let hashedPass = bcrypt.hash(User.password, 10);
+//   User.password = hashedPass;
+// });
 
 module.exports = {sequelizeDatabase, UsersModel};
 
