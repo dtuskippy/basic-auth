@@ -36,7 +36,7 @@
     * Endpoint: '/signin'
         * POST to login with existing username and password
     *  Enpoint: '/*'
-        * Returns object with 404 error
+        * Returns object with 'not found' 404 error
 
 ### Tests
 
